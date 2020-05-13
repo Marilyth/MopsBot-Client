@@ -17,5 +17,5 @@ class Moderation(commands.Cog):
     async def SetPrefix(self, ctx: commands.Context, prefix):
         ctx.channel().trigger_typing()
         oldPrefix = self.bot.get_prefix(ctx.guild())
-        self.bot.insert_or_update_prefix(ctx.guild(), prefix)
+        self.bot.commandHandler.insert_or_update_prefix(ctx.guild(), prefix)
         ctx.send("Changed prefix from `{0}` to `{1}".format(oldPrefix, prefix))
