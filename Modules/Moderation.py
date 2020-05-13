@@ -6,7 +6,6 @@ class Moderation(commands.Cog):
         self.bot = bot
         print("moderation init")
 
-    @commands.command()
+    @commands.command(help = "it pongs")
     async def ping(self, ctx):
-        """it pongs"""
         await ctx.send('pong')
