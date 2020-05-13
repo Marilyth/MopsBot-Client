@@ -6,11 +6,14 @@ import threading
 import json
 import time
 import asyncio
+import pymongo
 
 class MopsClient(commands.AutoShardedBot):
     def __init__(self, config, **kwargs):
         self.config = config
         self.shards_ready = 0
+        self.databaseClient = pymongo.MongoClient(config["DatabaseURL"])
+        self.database = self.databaseClient["Mops"]
         super(MopsClient, self).__init__(**kwargs)
 
 
