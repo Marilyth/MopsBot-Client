@@ -2,6 +2,9 @@ import discord
 import socket
 import json
 import time
+import typing
+from typing import List
+from typing import Tuple
 import asyncio
 from dateutil import parser
 
@@ -15,18 +18,20 @@ class TrackerClient:
     async def send_message(self, message: str):
         self.server.send(str.encode(message))
 
-    async def received_message(self, message: str):
+    async def received_message(self, message: 'TrackerMessage'):
         try:
-            print("data recieved: {0}".format(message))
+            print("data recieved: {0}".format(message.content))
+            eventMessage = json.loads(message.content)
 
-            data = message.split("STARTEVENT ")[1].split(sep="\n", maxsplit=1)
-            event_id = int(data[0])
-            eventMessage = json.loads(data[1].split("ENDEVENT " + str(event_id))[0])
+            if "ChannelId" in eventMessage:
+                channel = self.bot.get_channel(eventMessage["ChannelId"])
+                embed = self.dnet_embed_to_py(eventMessage["Embed"])
 
-            channel = self.bot.get_channel(eventMessage["ChannelId"])
-            embed = self.dnet_embed_to_py(eventMessage["Embed"])
+                await channel.send(eventMessage["Notification"], embed=embed)
 
-            await channel.send(eventMessage["Notification"], embed=embed)
+            else:
+                print("Didn't know what to do")
+
         except:
             pass
 
@@ -36,10 +41,13 @@ class TrackerClient:
                 try:
                     self.server = s
                     self.server.connect((self.HOST, self.PORT))
+                    data: str = ""
                     while True:
-                            data = self.server.recv(8192)
-                            await self.received_message(data.decode())
-                            await self.send_message("Received data")
+                            data += self.server.recv(8192).decode()
+                            data, message_list = self.find_messages(data)
+                            for message in message_list:
+                                await self.received_message(message)
+                                await self.send_message(f"ACK {message.id}")
                 except Exception as e:
                     print(e)
                     print("Connection was interrupted, trying again in 10 seconds.")
@@ -60,3 +68,23 @@ class TrackerClient:
 
         return embed
     
+    def find_messages(self, data: str) -> Tuple[str, List['TrackerMessage']]:
+        messages = []
+        while True:
+            start_index_a = data.find("STARTEVENT")
+            start_index_b = data[start_index_a:].find("\n")
+            if start_index_a >= 0 and start_index_b > 0:
+                event_id = int(data[start_index_a + 11 : start_index_b])
+                end_index = data.find("ENDEVENT " + str(event_id))
+                if end_index >= 0:
+                    messages.append(TrackerMessage(event_id, data[start_index_b + 1 : end_index - 1]))
+                    data = data[end_index + len("ENDEVENT " + str(event_id)):]
+                    continue
+
+            return data, messages
+                
+
+class TrackerMessage:
+    def __init__(self, id: int, data: str):
+        self.id = id
+        self.content = data
