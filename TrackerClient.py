@@ -43,7 +43,7 @@ class TrackerClient:
                 except Exception as e:
                     print(e)
                     print("Connection was interrupted, trying again in 10 seconds.")
-                    asyncio.sleep(10)
+                    await asyncio.sleep(10)
 
     def dnet_embed_to_py(self, json_dict) -> discord.Embed:
         embed = discord.Embed()
