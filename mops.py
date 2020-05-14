@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from TrackerClient import TrackerClient
 from commandHandler import commandHandler
+from ReactionHandler import ReactionHandler
 import threading
 import json
 import time
@@ -20,7 +21,9 @@ class MopsClient(commands.AutoShardedBot):
         self.databaseClient = pymongo.MongoClient(config["DatabaseURL"])
         self.database = self.databaseClient["Mops"]
         self.commandHandler = commandHandler(self)
+        self.reactionHandler: ReactionHandler = ReactionHandler(self)
         self.add_cog(self.commandHandler)
+        self.add_cog(self.reactionHandler)
 
     async def on_shard_ready(self, shard_id):
         print('Mopsbot ready shard id {0} total shards: {1} ready'.format(shard_id, self.shard_count))
