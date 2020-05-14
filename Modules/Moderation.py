@@ -13,7 +13,7 @@ class Moderation(commands.Cog):
         await ctx.send('pong')
 
     @commands.command(help = "Changes the prefix of Mops in the current Guild")
-    @commands.has_permissions(manage_channel=True)
+    @commands.has_permissions(manage_channels=True)
     async def SetPrefix(self, ctx: commands.Context, prefix):
         ctx.channel().trigger_typing()
         oldPrefix = self.bot.get_prefix(ctx.guild())

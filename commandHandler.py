@@ -9,7 +9,7 @@ class commandHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.prefixList = dict()
-        for doc in self.bot.database["GuildPrefixes"]:
+        for doc in self.bot.database["GuildPrefixes"].find():
             self.prefixList[doc["_id"]] = doc["Value"]
         
         bot.command_prefix = prefix
@@ -40,4 +40,4 @@ class commandHandler(commands.Cog):
                                 self.bot.add_cog(obj(self.bot))
 
 def prefix(bot, message):
-    return commands.when_mentioned_or(bot.commandHandler.get_prefix(message.guild()))(bot, message)
+    return commands.when_mentioned_or(bot.commandHandler.get_prefix(message.guild))(bot, message)

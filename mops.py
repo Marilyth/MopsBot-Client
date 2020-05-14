@@ -14,15 +14,13 @@ import inspect
 
 class MopsClient(commands.AutoShardedBot):
     def __init__(self, config, **kwargs):
+        super(MopsClient, self).__init__(**kwargs, command_prefix="!")
         self.config = config
         self.shards_ready = 0
         self.databaseClient = pymongo.MongoClient(config["DatabaseURL"])
         self.database = self.databaseClient["Mops"]
-        self.commandHandler = commandHandler(client)
+        self.commandHandler = commandHandler(self)
         self.add_cog(self.commandHandler)
-
-        super(MopsClient, self).__init__(**kwargs, command_prefix="!")
-
 
     async def on_shard_ready(self, shard_id):
         print('Mopsbot ready shard id {0} total shards: {1} ready'.format(shard_id, self.shard_count))
