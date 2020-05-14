@@ -31,11 +31,9 @@ class ReactionHandler(commands.Cog):
             if message.id not in self.on_added:
                 self.on_added[message.id] = dict()
             self.on_added[message.id][emoji] = function
-            print(f"{len(self.on_added[message.id])}")
         else:
             if message.id not in self.on_removed:
                 self.on_removed[message.id] = dict()
             self.on_removed[message.id][emoji] = function
-            print(f"{len(self.on_removed[message.id])}")
 
             
