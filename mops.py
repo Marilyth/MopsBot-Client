@@ -35,13 +35,10 @@ class MopsClient(commands.AutoShardedBot):
             tracker_client = TrackerClient(client, "127.0.0.1", 11000)
             asyncio.ensure_future(tracker_client.start_connection_loop())
 
-
 if __name__ == "__main__":
     with open("./mopsdata/Config.json", mode="r") as file:
         data = file.read()
     config = json.loads(data)
 
-    client = MopsClient(config, fetch_offline_members=False, guild_subscriptions=False)
-
-
+    client = MopsClient(config, fetch_offline_members=False, guild_subscriptions=False, case_insensitive=True)
     client.run(config["Discord"])
