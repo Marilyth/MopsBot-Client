@@ -4,7 +4,9 @@ import discord
 import json
 import mops
 import urllib
+import datetime
 import requests
+import time
 from Utils.MopsPaginator import MopsPaginator
 
 class Information(commands.Cog):
@@ -61,6 +63,22 @@ class Information(commands.Cog):
             embeds.append(pod_embed)
 
         await MopsPaginator(self.bot).create_paged_message(ctx.channel.id, embeds)
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def BotInfo(self, ctx: commands.context.Context):
+        await ctx.trigger_typing()
+        info_embed = discord.Embed()
+        info_embed.title = "Mops Statistics"
+        info_embed.timestamp = datetime.datetime.utcnow()
+        
+        info_embed.add_field(name = "Shards", value = "\n".join([f"Shard: {x[0]} {int(x[1]*1000)}ms" for x in self.bot.latencies]))
+        runtime_seconds = time.time() - mops.startTime
+        info_embed.add_field(name = "General", value = f"Runtime: {int(runtime_seconds/3600)}h {int(runtime_seconds/60)}m")
+        
+        #ToDo: Add tracker info
+
+        await ctx.send(embed=info_embed)
 
     @staticmethod
     async def get_url_async(url: str) -> str:

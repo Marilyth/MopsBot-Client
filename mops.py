@@ -11,7 +11,8 @@ import pymongo
 import pkgutil
 import sys
 import inspect
-
+import time
+startTime = time.time()
 
 class MopsClient(commands.AutoShardedBot):
     def __init__(self, config, **kwargs):
