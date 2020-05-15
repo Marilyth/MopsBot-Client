@@ -32,8 +32,7 @@ class commandHandler(commands.Cog):
         for importer, package_name, _ in pkgutil.iter_modules(["Modules"]):
             full_package_name = '%s.%s' % ("Modules", package_name)
             if full_package_name not in sys.modules:
-                    module = importer.find_module(full_package_name
-                                ).load_module(full_package_name)
+                    module = importer.find_module(full_package_name).load_module(full_package_name)
                     for name,obj in inspect.getmembers(module):
                         if inspect.isclass(obj):
                             if(issubclass(obj,commands.Cog)):

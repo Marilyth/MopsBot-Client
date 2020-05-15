@@ -19,7 +19,7 @@ class Information(commands.Cog):
     async def Hug(self, ctx: commands.context.Context, *, member: discord.User):
         user = await MopsUser.get_user(self.bot, member.id)
 
-        def modify(mops_user: 'MopsUser'):
+        def modify(mops_user: MopsUser):
             mops_user.Hugged += 1
 
         await MopsUser.modify_user(self.bot, user, modify)
@@ -32,7 +32,7 @@ class Information(commands.Cog):
     async def Kiss(self, ctx: commands.context.Context, *, member: discord.User):
         user = await MopsUser.get_user(self.bot, member.id)
 
-        def modify(mops_user: 'MopsUser'):
+        def modify(mops_user: MopsUser):
             mops_user.Kissed += 1
 
         await MopsUser.modify_user(self.bot, user, modify)
@@ -45,7 +45,7 @@ class Information(commands.Cog):
     async def Punch(self, ctx: commands.context.Context, *, member: discord.User):
         user = await MopsUser.get_user(self.bot, member.id)
 
-        def modify(mops_user: 'MopsUser'):
+        def modify(mops_user: MopsUser):
             mops_user.Punched += 1
 
         await MopsUser.modify_user(self.bot, user, modify)

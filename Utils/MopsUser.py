@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import discord
 import typing
 import mops
@@ -17,7 +19,7 @@ class MopsUser:
         self.Kissed = data["Kissed"]
 
     @staticmethod
-    async def get_user(bot: mops.MopsClient, user_id: int) -> 'MopsUser':
+    async def get_user(bot: mops.MopsClient, user_id: int) -> MopsUser:
         user = bot.database["Users"].find_one({"_id": user_id})
         if user is None:
             user = {
