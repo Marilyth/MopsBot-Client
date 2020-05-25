@@ -32,8 +32,8 @@ class TrackerClient:
 
             await asyncio.sleep(10)
 
-    async def send_message(self, message: str, wait_for_ack: bool = False, execute_after_ack: callable = None):
-        ticket = TrackerMessage(self.ticket_id, message, execute_after_ack)
+    async def send_message(self, message: str, wait_for_ack: bool = False, execute_after_ack: callable = None, callback_args = None):
+        ticket = TrackerMessage(self.ticket_id, message, execute_after_ack, callback_args)
         self.ticket_id += 1
 
         if wait_for_ack:
@@ -53,10 +53,11 @@ class TrackerClient:
                 if message.ack_id in self.waiting_for_ack:
                     ticket = self.waiting_for_ack.pop(message.ack_id)
                     if ticket.function != None:
-                        ticket.function()
+                        await ticket.function(message, ticket.callback_args)
 
                 return
 
+            await self.send_message(f"ACKNOWLEDGED REQUEST {message.id}")
             eventMessage = json.loads(message.content)
 
             if "ChannelId" in eventMessage:
@@ -89,7 +90,6 @@ class TrackerClient:
                         data, message_list = self.find_messages(data)
                         for message in message_list:
                             await self.received_message(message)
-                            await self.send_message(f"ACKNOWLEDGED REQUEST {message.id}")
                 except Exception as e:
                     self.connected = False
                     print(e)
@@ -128,16 +128,16 @@ class TrackerClient:
                 
 
 class TrackerMessage:
-    def __init__(self, id: int, data: str, execute_after_ack: Callable[['TrackerMessage'], Any] = None):
+    def __init__(self, id: int, data: str, execute_after_ack: Callable[['TrackerMessage'], Any] = None, callback_args = None):
         self.id = id
         self.content = data
         self.time = time.time()
         self.function = execute_after_ack
+        self.callback_args = callback_args
         self.is_ack = "ACKNOWLEDGED REQUEST " in self.content
-        if self.is_ack:
-            self.ack_id = int(self.content.split("ACKNOWLEDGED REQUEST ")[1].split("\n")[0])
-            self.content = self.content.split(f"ACKNOWLEDGED REQUEST {self.ack_id}\n")[-1]
-
         self.full_message = f"STARTEVENT {self.id}\n{self.content}\nENDEVENT {self.id}"
         self.full_encoded_message = str.encode(self.full_message)
     
+        if self.is_ack:
+            self.ack_id = int(self.content.split("ACKNOWLEDGED REQUEST ")[1].split("\n")[0])
+            self.content = self.content.split(f"ACKNOWLEDGED REQUEST {self.ack_id}\n")[-1]
