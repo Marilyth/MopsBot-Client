@@ -3,6 +3,7 @@ from discord.ext import commands
 from TrackerClient import TrackerClient
 from commandHandler import commandHandler
 from ReactionHandler import ReactionHandler
+from Utils.Trackers import Trackers
 import threading
 import json
 import time
@@ -21,6 +22,8 @@ class MopsClient(commands.AutoShardedBot):
         self.shards_ready = 0
         self.databaseClient = pymongo.MongoClient(config["DatabaseURL"])
         self.database = self.databaseClient["Mops"]
+        self.trackers = Trackers(self)
+        test = self.trackers["Twitch"]["retrogaijin"]
         self.commandHandler = commandHandler(self)
         self.reactionHandler: ReactionHandler = ReactionHandler(self)
         self.add_cog(self.commandHandler)
