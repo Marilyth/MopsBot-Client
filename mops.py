@@ -35,8 +35,9 @@ class MopsClient(commands.AutoShardedBot):
         self.shards_ready += 1
         if self.shards_ready == self.shard_count:
             print("All shards ready, starting tracker client")
-            tracker_client = TrackerClient(client, "127.0.0.1", 11000)
-            asyncio.ensure_future(tracker_client.start_connection_loop())
+            self.tracker_client = TrackerClient(client, "127.0.0.1", 11000)
+            asyncio.ensure_future(self.tracker_client.start_connection_loop())
+            asyncio.ensure_future(self.tracker_client.resend_ack_loop())
 
 if __name__ == "__main__":
     with open("./mopsdata/Config.json", mode="r") as file:

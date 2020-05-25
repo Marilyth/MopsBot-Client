@@ -4,6 +4,7 @@ import json
 import time
 import typing
 from typing import *
+from Utils.Trackers import case_sensitive_types
 import asyncio
 from dateutil import parser
 
@@ -13,13 +14,23 @@ class TrackerClient:
         self.PORT = 11000
         self.server: socket = None
         self.bot = bot
+        self.connected = False
         self.ticket_id = 0
         self.waiting_for_ack = dict()
 
-    #async def add_tracker(self, bot, type, name, channel_id, callback = None):
-        #def on_ack(answer: 'TrackerMessage', client: TrackerClient):
-        #    client.bot.trackers[type][name] = client.bot.database[f"{type}Tracker"].find_one({"_id": name})
-        #self.send_message(f"ADD {str.upper(type)} {channel_id} {name}")
+    async def resend_ack_loop(self):
+        while True:
+            try:
+                for key, value in self.waiting_for_ack.items():
+                    #Server took over 1 minute
+                    if (value.time - time.time()) > 60:
+                        self.waiting_for_ack.pop(key)
+                    else:
+                        await self.send_ticket(value)
+            except Exception as e:
+                print(e)
+
+            await asyncio.sleep(10)
 
     async def send_message(self, message: str, wait_for_ack: bool = False, execute_after_ack: callable = None):
         ticket = TrackerMessage(self.ticket_id, message, execute_after_ack)
@@ -28,7 +39,11 @@ class TrackerClient:
         if wait_for_ack:
             self.waiting_for_ack[ticket.id] = ticket
 
-        self.server.send(ticket)
+        await self.send_ticket(ticket)
+
+    async def send_ticket(self, ticket: 'TrackerMessage'):
+        if self.connected:
+            self.server.send(ticket.full_encoded_message)
 
     async def received_message(self, message: 'TrackerMessage'):
         try:
@@ -62,14 +77,21 @@ class TrackerClient:
                 try:
                     self.server = s
                     self.server.connect((self.HOST, self.PORT))
+                    self.server.setblocking(False)
+                    self.connected = True
                     data: str = ""
                     while True:
+                        try:
                             data += self.server.recv(8192).decode()
-                            data, message_list = self.find_messages(data)
-                            for message in message_list:
-                                await self.received_message(message)
-                                await self.send_message(f"ACKNOWLEDGED REQUEST {message.id}")
+                        except BlockingIOError as e:
+                            await asyncio.sleep(1)
+                            continue
+                        data, message_list = self.find_messages(data)
+                        for message in message_list:
+                            await self.received_message(message)
+                            await self.send_message(f"ACKNOWLEDGED REQUEST {message.id}")
                 except Exception as e:
+                    self.connected = False
                     print(e)
                     print("Connection was interrupted, trying again in 10 seconds.")
                     await asyncio.sleep(10)
@@ -106,14 +128,15 @@ class TrackerClient:
                 
 
 class TrackerMessage:
-    def __init__(self, id: int, data: str, execute_after_ack: Callable[[TrackerMessage], Any] = None):
+    def __init__(self, id: int, data: str, execute_after_ack: Callable[['TrackerMessage'], Any] = None):
         self.id = id
         self.content = data
+        self.time = time.time()
         self.function = execute_after_ack
         self.is_ack = "ACKNOWLEDGED REQUEST " in self.content
         if self.is_ack:
             self.ack_id = int(self.content.split("ACKNOWLEDGED REQUEST ")[1].split("\n")[0])
-            self.content = self.content.split(f"ACKNOWLEDGED REQUEST {self.ack_id}\n")[1]
+            self.content = self.content.split(f"ACKNOWLEDGED REQUEST {self.ack_id}\n")[-1]
 
         self.full_message = f"STARTEVENT {self.id}\n{self.content}\nENDEVENT {self.id}"
         self.full_encoded_message = str.encode(self.full_message)
