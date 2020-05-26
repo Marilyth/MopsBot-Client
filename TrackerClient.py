@@ -16,21 +16,29 @@ class TrackerClient:
         self.bot = bot
         self.connected = False
         self.ticket_id = 0
-        self.waiting_for_ack = dict()
+        self.waiting_for_ack: Dict[int, TrackerMessage] = dict()
 
     async def resend_ack_loop(self):
         while True:
             try:
-                for key, value in self.waiting_for_ack.items():
-                    #Server took over 1 minute
-                    if (value.time - time.time()) > 60:
-                        self.waiting_for_ack.pop(key)
-                    else:
+                for key, value in list(self.waiting_for_ack.items()):
+                    seconds_since = time.time() - value.time
+                    ticket: TrackerMessage = value
+
+                    #Server took over 10 minutes, remove ticket
+                    if seconds_since >= 600:
+                        ticket = self.waiting_for_ack.pop(key)
+                        if ticket.function != None:
+                            await ticket.function(TrackerMessage(-1, "Server did not respond, please try again later."), ticket.callback_args)
+                    #Resend ticket
+                    elif seconds_since >= 60:
+                        if ticket.function != None:
+                            await ticket.function(TrackerMessage(-1, f"Server did not respond, trying again in a minute. ({int(seconds_since / 60)}/10)"), ticket.callback_args)
                         await self.send_ticket(value)
             except Exception as e:
                 print(e)
 
-            await asyncio.sleep(10)
+            await asyncio.sleep(60)
 
     async def send_message(self, message: str, wait_for_ack: bool = False, execute_after_ack: callable = None, callback_args = None):
         ticket = TrackerMessage(self.ticket_id, message, execute_after_ack, callback_args)
@@ -44,6 +52,9 @@ class TrackerClient:
     async def send_ticket(self, ticket: 'TrackerMessage'):
         if self.connected:
             self.server.send(ticket.full_encoded_message)
+        else:
+            if ticket.function != None:
+                await ticket.function(TrackerMessage(-1, f"Server is offline, trying again in a minute."), ticket.callback_args)
 
     async def received_message(self, message: 'TrackerMessage'):
         try:
@@ -98,15 +109,24 @@ class TrackerClient:
 
     def dnet_embed_to_py(self, json_dict) -> discord.Embed:
         embed = discord.Embed()
-        embed.title = json_dict["Title"]
-        embed.description = json_dict["Description"]
-        embed.url = json_dict["Url"]
-        embed.timestamp = parser.parse(json_dict["Timestamp"])
-        embed.colour = discord.colour.Colour(json_dict["Color"]["RawValue"])
-        embed.set_image(url=json_dict["Image"]["Url"])
-        embed.set_author(name=json_dict["Author"]["Name"], url=json_dict["Author"]["Url"], icon_url=json_dict["Author"]["IconUrl"])
-        embed.set_footer(text=json_dict["Footer"]["Text"], icon_url=json_dict["Footer"]["IconUrl"])
-        embed.set_thumbnail(url=json_dict["Thumbnail"]["Url"])
+        if "Title" in json_dict:
+            embed.title = json_dict["Title"]
+        if "Description" in json_dict:
+            embed.description = json_dict["Description"]
+        if "Url" in json_dict:
+            embed.url = json_dict["Url"]
+        if "Timestamp" in json_dict:
+            embed.timestamp = parser.parse(json_dict["Timestamp"])
+        if "Color" in json_dict:
+            embed.colour = discord.colour.Colour(json_dict["Color"]["RawValue"])
+        if "Image" in json_dict:
+            embed.set_image(url=json_dict["Image"]["Url"])
+        if "Author" in json_dict:
+            embed.set_author(name=json_dict["Author"]["Name"], url=json_dict["Author"]["Url"], icon_url=json_dict["Author"]["IconUrl"])
+        if "Footer" in json_dict:
+            embed.set_footer(text=json_dict["Footer"]["Text"], icon_url=json_dict["Footer"]["IconUrl"])
+        if "Thumbnail" in json_dict:
+            embed.set_thumbnail(url=json_dict["Thumbnail"]["Url"])
         #ToDo: Handle fields
 
         return embed
