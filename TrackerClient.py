@@ -151,6 +151,7 @@ class TrackerMessage:
     def __init__(self, id: int, data: str, execute_after_ack: Callable[['TrackerMessage'], Any] = None, callback_args = None):
         self.id = id
         self.content = data
+        self.embed = None
         self.time = time.time()
         self.function = execute_after_ack
         self.callback_args = callback_args

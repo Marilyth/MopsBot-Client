@@ -38,14 +38,23 @@ class Trackers:
 
     def __getitem__(self, item):
         return self.trackers[item]
+
+    def get_config_str(self, tracker, channel_id: int):
+        config = "```yaml\n"
+        cur_config = [x["v"] for x in tracker["ChannelConfig"] if x["k"] == channel_id][0]
+        for option in cur_config:
+            config += f"{option}: {cur_config[option]}\n"
+        config += "```"
+
+        return config
         
     async def add(self, type: str, name: str, channel_id: int, notification: str, callback = None, callback_args = None):
         if type not in case_sensitive_types:
             name = name.lower()
         await self.bot.tracker_client.send_message(f"ADD|||{type}|||{channel_id}|||{name}|||{notification}", wait_for_ack=True, execute_after_ack=callback, callback_args = callback_args)
 
-    async def set_notification(self, type: str, name: str, channel_id: int, callback = None):
-        await self.bot.tracker_client.send_message(f"SETNOTIFICATION|||{type}|||{channel_id}|||{name}", wait_for_ack=True, execute_after_ack=callback)
+    async def set_notification(self, type: str, name: str, channel_id: int, notification: str, callback = None):
+        await self.bot.tracker_client.send_message(f"SETNOTIFICATION|||{type}|||{channel_id}|||{name}|||{notification}", wait_for_ack=True, execute_after_ack=callback)
 
     async def remove(self, type: str, name: str, channel_id: int, callback = None):
         await self.bot.tracker_client.send_message(f"REMOVE|||{type}|||{channel_id}|||{name}", wait_for_ack=True, execute_after_ack=callback)
@@ -55,3 +64,6 @@ class Trackers:
 
     async def change_channel(self, type: str, name: str, from_channel_id: int, to_channel_id: int, callback = None):
         await self.bot.tracker_client.send_message(f"CHANGECHANNEL|||{type}|||{from_channel_id}|||{name}|||{to_channel_id}", wait_for_ack=True, execute_after_ack=callback)
+
+    async def get_trackers(self, type: str, channel_id: int, callback = None):
+        await self.bot.tracker_client.send_message(f"GETTRACKERS|||{type}|||{channel_id}", wait_for_ack=True, execute_after_ack=callback)

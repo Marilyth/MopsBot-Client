@@ -23,7 +23,6 @@ class MopsClient(commands.AutoShardedBot):
         self.databaseClient = pymongo.MongoClient(config["DatabaseURL"])
         self.database = self.databaseClient["Mops"]
         self.trackers = Trackers(self)
-        test = self.trackers["Twitch"]["retrogaijin"]
         self.commandHandler = commandHandler(self)
         self.reactionHandler: ReactionHandler = ReactionHandler(self)
         self.add_cog(self.commandHandler)
